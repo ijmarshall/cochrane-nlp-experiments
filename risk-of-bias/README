@@ -1,0 +1,13 @@
+# cochrane-nlp-experiments
+
+To be used in conjunction with the cochrane-nlp repo
+Experiments in ipython notebook form
+
+## NOTES
+
+*cochranenlp must be installed as a module*
+
+this may be done by
+1. renaming `cochrane-nlp` as `cochranenlp` (since module names may not contain '-')
+2. adding the `cochranenlp` to the $PYTHONPATH environment variable
+
