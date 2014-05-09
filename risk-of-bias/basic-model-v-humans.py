@@ -21,56 +21,70 @@ import time
 
 
 
-
-
 def main():
-    dat = riskofbias.RoBData(test_mode=True)
-    dat.generate_data(doc_level_only=True)
 
 
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
-
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
+    human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
 
 
-    multitask_docs = riskofbias.MultiTaskDocFilter(dat) # use the same ids as the multitask model
-    multitask_uids = np.array(multitask_docs.get_ids())
-    no_studies = len(multitask_uids)
+    # parse the risk of bias data from Cochrane
+    data = riskofbias.RoBData(test_mode=False)
+    data.generate_data(doc_level_only=True)
 
+    # filter the data by Document
+    filtered_data = riskofbias.DocFilter(data)
 
-    kf = KFold(no_studies, n_folds=5, shuffle=False)
+    # get the uids of the desired training set
+    # (for this experiment those which appear in only one review)
 
+    uids_all = filtered_data.get_ids(pmid_instance=0) # those with 1 or more assessment (i.e. all)
+    uids_double_assessed = filtered_data.get_ids(pmid_instance=1) # those with 2 (or more) assessments (to hide for training)
+
+    uids_train = np.setdiff1d(uids_all, uids_double_assessed)
+
+    # we need different test ids for each domain
+    # (since we're testing on studies with more than one RoB assessment for *each domain*)
+
+    uids_test = {}
     for domain in riskofbias.CORE_DOMAINS:
 
-        docs = riskofbias.DocFilter(dat)
-        uids = np.array(docs.get_ids(filter_domain=domain))
-
-        print "%d docs obtained for domain: %s" % (len(uids), domain)
-
+        # print "%d docs obtained for domain: %s" % (len(uids), domain)
 
         tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
+        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='accuracy')
 
-        no_studies = len(uids)
+        # no_studies = len(uids)
+
+        X_train_d, y_train = filtered_data.Xy(uids_train, domain=domain, pmid_instance=0)
+
+        # get domain test ids
+        # (i.e. the double assessed trials, which have a judgement for the current domain in
+        #   *both* the 0th and 1st review)
+        uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
+        uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
+        uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
 
 
-        for train, test in kf:
+        X_test_d, y_test = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=0)
 
-            X_train_d, y_train = docs.Xy(np.intersect1d(uids, multitask_uids[train]), domain=domain)
-            X_test_d, y_test = docs.Xy(np.intersect1d(uids, multitask_uids[test]), domain=domain)
+        X_ignore, y_human = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=1)
+        X_ignore = None # don't need this bit
 
-            vec = modhashvec.InteractionHashingVectorizer(norm=None, non_negative=True, binary=True)
 
-            X_train = vec.fit_transform(X_train_d, low=2)
-            X_test = vec.transform(X_test_d)
+        vec = modhashvec.InteractionHashingVectorizer(norm=None, non_negative=True, binary=True)
 
-            clf.fit(X_train, y_train)
+        X_train = vec.fit_transform(X_train_d, low=2)
+        X_test = vec.transform(X_test_d)
 
-            y_preds = clf.predict(X_test)
+        clf.fit(X_train, y_train)
 
-            model_metrics.add_preds_test(y_preds, y_test, domain=domain)
+        y_preds = clf.predict(X_test)
 
-            stupid_metrics.add_preds_test([1] * len(y_test), y_test, domain=domain)
+        model_metrics.add_preds_test(y_preds, y_test, domain=domain)
+        human_metrics.add_preds_test(y_human, y_test, domain=domain)
+        stupid_metrics.add_preds_test([1] * len(y_test), y_test, domain=domain)
 
     model_metrics.save_csv(os.path.join('results', outputnames.filename(label="model")))
     stupid_metrics.save_csv(os.path.join('results', outputnames.filename(label="stupid-baseline")))
