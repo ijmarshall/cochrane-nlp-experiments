@@ -4,7 +4,6 @@
 
 # 1 fold, and versus humans and baseline
 
-
 from cochranenlp.experiments import riskofbias
 from cochranenlp.ml import modhashvec
 from cochranenlp.output import metrics, outputnames
