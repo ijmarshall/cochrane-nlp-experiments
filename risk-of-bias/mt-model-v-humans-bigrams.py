@@ -44,6 +44,8 @@ def main():
 
     uids_train = np.setdiff1d(uids_all, uids_double_assessed)
 
+
+
     # we need different test ids for each domain
     # (since we're testing on studies with more than one RoB assessment for *each domain*)
 
@@ -62,22 +64,47 @@ def main():
             else:
                 interactions[domain].append(False)
 
-    vec = ModularCountVectorizer()
+    vec = ModularCountVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
 
     logging.info('adding base features')
-    vec.builder_add_docs(X_train_d, low=2) # add base features
+    vec.builder_add_docs(X_train_d, low=10) # add base features
 
     for domain in CORE_DOMAINS:
         logging.info('adding interactions for domain %s' % (domain,))
         print np.sum(interactions[domain]), "/", len(interactions[domain]), "added for", domain
         vec.builder_add_interaction_features(X_train_d, interactions=interactions[domain], prefix=domain+"-i-", low=2) # then add interactions
 
-    logging.info('fitting vectorizer')
+    
     X_train = vec.builder_fit_transform()
     
-    logging.info('fitting model')
     clf.fit(X_train, y_train)
+
+    # Test on each domain in turn
+
+
+    for domain in riskofbias.CORE_DOMAINS:
+
+        X_test_d, y_test, i_test = docs.Xyi(uids_double_assessed, pmid_instance=1)
+
+        domain_uids = np.array(test_docs.available_ids)
+
+        test_uids = np.intersect1d(train_uids[test], domain_uids)
+
+        X_test_d, y_test = test_docs.Xy(test_uids)
+
+        # build up test vector
+
+        vec.builder_clear()
+        vec.builder_add_docs(X_test_d) # add base features
+        vec.builder_add_docs(X_test_d, prefix=domain+'-i-') # add interactions
+
+        X_test = vec.builder_transform()
+
+        y_preds = clf.predict(X_test)
+
+        metrics.add_preds_test(y_preds, y_test, domain=domain)
+
 
 
 #
