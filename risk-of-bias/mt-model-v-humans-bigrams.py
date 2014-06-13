@@ -30,7 +30,7 @@ def main():
 
 
     # parse the risk of bias data from Cochrane
-    data = riskofbias.RoBData(test_mode=False)
+    data = riskofbias.RoBData(test_mode=True)
     data.generate_data(doc_level_only=True)
 
     # filter the data by Document
@@ -64,7 +64,7 @@ def main():
             else:
                 interactions[domain].append(False)
 
-    vec = ModularCountVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
+    vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
 
     logging.info('adding base features')
@@ -82,16 +82,18 @@ def main():
 
     # Test on each domain in turn
 
-
     for domain in riskofbias.CORE_DOMAINS:
 
-        X_test_d, y_test, i_test = docs.Xyi(uids_double_assessed, pmid_instance=1)
-
+        test_docs = DocFilter(dat, domain=domain) # test on regular doc model
         domain_uids = np.array(test_docs.available_ids)
 
         test_uids = np.intersect1d(train_uids[test], domain_uids)
 
-        X_test_d, y_test = test_docs.Xy(test_uids)
+        X_test_d, y_test = test_docs.Xy(uids_double_assessed, domain=domain, pmid_instance=0)
+
+        X_ignore, y_human = filtered_data.Xy(uids_double_assessed, domain=domain, pmid_instance=1)
+        
+        X_ignore=None # not needed so remove reference
 
         # build up test vector
 
@@ -103,56 +105,19 @@ def main():
 
         y_preds = clf.predict(X_test)
 
-        metrics.add_preds_test(y_preds, y_test, domain=domain)
-
-
-
-#
-#   END
-#
-    
-    for domain in riskofbias.CORE_DOMAINS:
-
-        # print "%d docs obtained for domain: %s" % (len(uids), domain)
-
-        
-        # no_studies = len(uids)
-
-        X_train_d, y_train = filtered_data.Xy(uids_train, domain=domain, pmid_instance=0)
-
-        # get domain test ids
-        # (i.e. the double assessed trials, which have a judgement for the current domain in
-        #   *both* the 0th and 1st review)
-        uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
-        uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
-        uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
-
-
-        X_test_d, y_test = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=0)
-
-        X_ignore, y_human = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=1)
-        X_ignore = None # don't need this bit
-
-
-        vec = modhashvec.InteractionHashingVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**24)
-        # n_features increased from the default (2^20), since with bigrams added
-        # in the features were colliding too much, and then *none* were removed
-        # with the low bar setting
-
-        X_train = vec.fit_transform(X_train_d, low=2)
-        X_test = vec.transform(X_test_d)
-
-        clf.fit(X_train, y_train)
-
-        y_preds = clf.predict(X_test)
-
         model_metrics.add_preds_test(y_preds, y_test, domain=domain)
         human_metrics.add_preds_test(y_human, y_test, domain=domain)
         stupid_metrics.add_preds_test([1] * len(y_test), y_test, domain=domain)
 
+
+
     model_metrics.save_csv(os.path.join('results', outputnames.filename(label="model")))
     stupid_metrics.save_csv(os.path.join('results', outputnames.filename(label="stupid-baseline")))
-    human_metrics.save_csv(os.path.join('results', outputnames.filename(label="human-performance")))
+    human_metrics.save_csv(os.path.join('results', outputnames.filename(label="human-performance")))   
+
+
+
+
 
 
 if __name__ == '__main__':
