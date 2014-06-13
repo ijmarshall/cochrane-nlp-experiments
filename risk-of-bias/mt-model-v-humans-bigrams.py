@@ -49,14 +49,46 @@ def main():
 
     docs = riskofbias.MultiTaskDocFilter(data)
 
+    tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='accuracy')
+
+    X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)
+
+    interactions = {domain:[] for domain in riskofbias.CORE_DOMAINS}
+    for doc_text, doc_domain in zip(X_train_d, i_train):
+        for domain in riskofbias.CORE_DOMAINS:
+            if domain == doc_domain:
+                interactions[domain].append(True)
+            else:
+                interactions[domain].append(False)
+
+    vec = ModularCountVectorizer()
+    vec.builder_clear()
+
+    logging.info('adding base features')
+    vec.builder_add_docs(X_train_d, low=2) # add base features
+
+    for domain in CORE_DOMAINS:
+        logging.info('adding interactions for domain %s' % (domain,))
+        print np.sum(interactions[domain]), "/", len(interactions[domain]), "added for", domain
+        vec.builder_add_interaction_features(X_train_d, interactions=interactions[domain], prefix=domain+"-i-", low=2) # then add interactions
+
+    logging.info('fitting vectorizer')
+    X_train = vec.builder_fit_transform()
+    
+    logging.info('fitting model')
+    clf.fit(X_train, y_train)
+
+
+#
+#   END
+#
     
     for domain in riskofbias.CORE_DOMAINS:
 
         # print "%d docs obtained for domain: %s" % (len(uids), domain)
 
-        tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='accuracy')
-
+        
         # no_studies = len(uids)
 
         X_train_d, y_train = filtered_data.Xy(uids_train, domain=domain, pmid_instance=0)
