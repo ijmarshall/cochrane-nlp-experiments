@@ -30,7 +30,7 @@ def main():
 
 
     # parse the risk of bias data from Cochrane
-    data = riskofbias.RoBData(test_mode=True)
+    data = riskofbias.RoBData(test_mode=False)
     data.generate_data(doc_level_only=True)
 
     # filter the data by Document
@@ -84,16 +84,16 @@ def main():
 
     for domain in riskofbias.CORE_DOMAINS:
 
-        # test_docs = riskofbias.DocFilter(data) # test on regular doc model
-        
-        # domain_uids = np.array(filtered_data.get_ids(domain=domain))
-        # test_uids = np.intersect1d(train_uids[test], domain_uids)
+        uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
+        uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
+        uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
 
-        X_test_d, y_test = filtered_data.Xy(uids_double_assessed, domain=domain, pmid_instance=0)
 
-        X_ignore, y_human = filtered_data.Xy(uids_double_assessed, domain=domain, pmid_instance=1)
-        
-        X_ignore=None # not needed so remove reference
+        X_test_d, y_test = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=0)
+
+        X_ignore, y_human = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=1)
+        X_ignore = None # don't need this bit
+
 
         # build up test vector
 
