@@ -67,11 +67,11 @@ def main():
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
 
-    logging.info('adding base features')
+    
     vec.builder_add_docs(X_train_d, low=10) # add base features
 
-    for domain in CORE_DOMAINS:
-        logging.info('adding interactions for domain %s' % (domain,))
+    for domain in riskofbias.CORE_DOMAINS:
+        
         print np.sum(interactions[domain]), "/", len(interactions[domain]), "added for", domain
         vec.builder_add_interaction_features(X_train_d, interactions=interactions[domain], prefix=domain+"-i-", low=2) # then add interactions
 
@@ -84,8 +84,9 @@ def main():
 
     for domain in riskofbias.CORE_DOMAINS:
 
-        test_docs = DocFilter(dat, domain=domain) # test on regular doc model
-        domain_uids = np.array(test_docs.available_ids)
+        test_docs = riskofbias.DocFilter(data) # test on regular doc model
+        
+        domain_uids = np.array(test_docs.available_ids(domain=domain))
 
         test_uids = np.intersect1d(train_uids[test], domain_uids)
 
