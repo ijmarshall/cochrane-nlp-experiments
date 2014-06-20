@@ -84,13 +84,12 @@ def main():
 
     for domain in riskofbias.CORE_DOMAINS:
 
-        test_docs = riskofbias.DocFilter(data) # test on regular doc model
+        # test_docs = riskofbias.DocFilter(data) # test on regular doc model
         
-        domain_uids = np.array(test_docs.available_ids(domain=domain))
+        # domain_uids = np.array(filtered_data.get_ids(domain=domain))
+        # test_uids = np.intersect1d(train_uids[test], domain_uids)
 
-        test_uids = np.intersect1d(train_uids[test], domain_uids)
-
-        X_test_d, y_test = test_docs.Xy(uids_double_assessed, domain=domain, pmid_instance=0)
+        X_test_d, y_test = filtered_data.Xy(uids_double_assessed, domain=domain, pmid_instance=0)
 
         X_ignore, y_human = filtered_data.Xy(uids_double_assessed, domain=domain, pmid_instance=1)
         
