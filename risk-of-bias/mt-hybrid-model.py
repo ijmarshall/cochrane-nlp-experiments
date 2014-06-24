@@ -56,7 +56,7 @@ def main():
 
     print "First, making sentence prediction model"
 
-    sent_docs = riskofbias.SentFilter(dat)
+    sent_docs = riskofbias.SentFilter(data)
 
     sent_models = {} #where the key is the domain name
 
@@ -65,17 +65,16 @@ def main():
     for domain in riskofbias.CORE_DOMAINS:
 
         sent_uids = np.intersect1d(uids_train, np.array(sent_docs.get_ids(filter_domain=domain)))
-        no_studies = len(uids)
+        no_studies = len(sent_uids)
 
         kf = KFold(no_studies, n_folds=5, shuffle=False)
 
         print "%d docs obtained for domain: %s" % (no_studies, domain)
 
-        tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
+        tuned_parameters = {"alpha": np.logspace(-4, -1, 10), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 10)]}
+        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='precision')
 
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
-
-        X_train_d, y_train = docs.Xy(sent_uids, domain=domain)
+        X_train_d, y_train = sent_docs.Xy(sent_uids, domain=domain)
         X_train = sent_vec.fit_transform(X_train_d, low=2)
         
         clf.fit(X_train, y_train)
@@ -109,7 +108,11 @@ def main():
 
         doc_sents_preds = sent_models[domain].predict(doc_sents_X)
 
+        
+
         high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred]))
+
+
 
 
         for domain in riskofbias.CORE_DOMAINS:
@@ -123,6 +126,8 @@ def main():
 
     
     vec.builder_add_docs(X_train_d, low=10) # add base features
+
+    # print high_prob_sents
 
     for domain in riskofbias.CORE_DOMAINS:
         
