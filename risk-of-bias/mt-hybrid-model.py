@@ -71,15 +71,18 @@ def main():
 
         print "%d docs obtained for domain: %s" % (no_studies, domain)
 
-        tuned_parameters = {"alpha": np.logspace(-4, -1, 10), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 10)]}
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='precision')
+        tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
+        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
         X_train_d, y_train = sent_docs.Xy(sent_uids, domain=domain)
         X_train = sent_vec.fit_transform(X_train_d, low=2)
         
         clf.fit(X_train, y_train)
 
-        sent_models[domain] = clf
+        sent_models[domain] = clf.best_estimator_
+        # import pdb; pdb.set_trace()
+
+    
 
 
 
@@ -106,12 +109,16 @@ def main():
         doc_sents = sent_tokenizer.tokenize(doc_text)
         doc_sents_X = sent_vec.transform(doc_sents)
 
-        doc_sents_preds = sent_models[domain].predict(doc_sents_X)
+        doc_sents_preds = sent_models[doc_domain].predict(doc_sents_X)
 
+        high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
+
+        print "high prob sents:"
+
+        from collections import Counter
+        prob_count = Counter(list(doc_sents_preds))
+        print prob_count
         
-
-        high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred]))
-
 
 
 
@@ -168,7 +175,7 @@ def main():
 
             doc_sents_preds = sent_models[domain].predict(doc_sents_X)
 
-            high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred]))
+            high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
 
 
