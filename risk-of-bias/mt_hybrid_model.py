@@ -22,8 +22,6 @@ import time
 
 
 def main():
-
-
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
@@ -192,9 +190,9 @@ def main():
 
 
 
-    model_metrics.save_csv(os.path.join('results', outputnames.filename(label="model")))
-    stupid_metrics.save_csv(os.path.join('results', outputnames.filename(label="stupid-baseline")))
-    human_metrics.save_csv(os.path.join('results', outputnames.filename(label="human-performance")))   
+    model_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="model")))
+    stupid_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="stupid-baseline")))
+    human_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="human-performance")))   
 
 
 
