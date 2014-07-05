@@ -75,6 +75,9 @@ def main():
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
         X_train_d, y_train = sent_docs.Xy(sent_uids, domain=domain)
+
+        
+
         X_train = sent_vec.fit_transform(X_train_d, low=2)
         
         clf.fit(X_train, y_train)
