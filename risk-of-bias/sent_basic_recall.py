@@ -26,11 +26,10 @@ def main():
     
 
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
-
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
 
-
     docs = riskofbias.SentFilter(dat)
+
 
     for domain in riskofbias.CORE_DOMAINS:
 

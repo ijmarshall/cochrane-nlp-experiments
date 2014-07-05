@@ -79,6 +79,13 @@ def main():
     
     clf.fit(X_train, y_train)
 
+    # free some memory now, only need the model
+    del X_train_d # remove references to these
+    del X_train
+    del y_train
+    clf = clf.best_estimator_ # and we only need the best performing, discard the rest
+
+
     # Test on each domain in turn
 
     for domain in riskofbias.CORE_DOMAINS:

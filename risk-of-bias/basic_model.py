@@ -24,7 +24,7 @@ import time
 
 
 def main():
-    dat = riskofbias.RoBData(test_mode=True)
+    dat = riskofbias.RoBData(test_mode=False)
     dat.generate_data(doc_level_only=True)
 
 
