@@ -17,17 +17,19 @@ from sklearn.cross_validation import KFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import SGDClassifier
 
+import sys
 import os
 import time
+import pdb
 
+def main(out_dir="results"):
 
-def main():
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
 
-
     # parse the risk of bias data from Cochrane
+    print "risk of bias data!"
     data = riskofbias.RoBData(test_mode=False)
     data.generate_data(doc_level_only=False)
 
@@ -68,6 +70,7 @@ def main():
         kf = KFold(no_studies, n_folds=5, shuffle=False)
 
         print "%d docs obtained for domain: %s" % (no_studies, domain)
+
 
         tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
@@ -187,9 +190,6 @@ def main():
         vec.builder_add_docs(X_test_d, prefix=domain+'-i-') # add interactions
         vec.builder_add_docs(high_prob_sents, prefix="-s-")
     
-
-
-
         X_test = vec.builder_transform()
 
         y_preds = clf.predict(X_test)
@@ -199,15 +199,15 @@ def main():
         stupid_metrics.add_preds_test([1] * len(y_test), y_test, domain=domain)
 
 
-
     model_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="model")))
     stupid_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="stupid-baseline")))
     human_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="human-performance")))   
 
 
-
-
-
-
 if __name__ == '__main__':
-    main()
+    args = sys.argv
+    if len(args) > 1:
+        print "output directory: %s" % args[1]
+        main(out_dir=args[1])
+    else:
+        main()
