@@ -5,7 +5,6 @@
 # 1 fold, and versus humans and baseline
 # same as basic, but uses bigrams and unigrams
 
-
 from cochranenlp.experiments import riskofbias
 from cochranenlp.ml import modhashvec
 from cochranenlp.output import metrics, outputnames
@@ -17,6 +16,7 @@ from sklearn.cross_validation import KFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import SGDClassifier
 
+import sys
 import os
 import time
 
