@@ -23,13 +23,11 @@ import time
 
 def main():
 
-
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
 
-
     # parse the risk of bias data from Cochrane
-    data = riskofbias.RoBData(test_mode=False)
+    data = riskofbias.RoBData(test_mode=True)
     data.generate_data(doc_level_only=False)
 
     docs = riskofbias.MultiTaskSentFilter(data)

@@ -97,7 +97,7 @@ def main():
     docs = riskofbias.MultiTaskDocFilter(data)
 
     tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='accuracy')
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)
 
