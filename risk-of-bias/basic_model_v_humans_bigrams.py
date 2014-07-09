@@ -5,7 +5,6 @@
 # 1 fold, and versus humans and baseline
 # same as basic, but uses bigrams and unigrams
 
-
 from cochranenlp.experiments import riskofbias
 from cochranenlp.ml import modhashvec
 from cochranenlp.output import metrics, outputnames
@@ -17,14 +16,11 @@ from sklearn.cross_validation import KFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import SGDClassifier
 
+import sys
 import os
 import time
 
-
-
-def main():
-
-
+def main(out_dir="results"):
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
@@ -90,10 +86,15 @@ def main():
         human_metrics.add_preds_test(y_human, y_test, domain=domain)
         stupid_metrics.add_preds_test([1] * len(y_test), y_test, domain=domain)
 
-    model_metrics.save_csv(os.path.join('results', outputnames.filename(label="model")))
-    stupid_metrics.save_csv(os.path.join('results', outputnames.filename(label="stupid-baseline")))
-    human_metrics.save_csv(os.path.join('results', outputnames.filename(label="human-performance")))
+    model_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="model")))
+    stupid_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="stupid-baseline")))
+    human_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="human-performance")))
 
 
 if __name__ == '__main__':
-    main()
+    args = sys.argv
+    if len(args) > 1:
+        print "output directory: %s" % args[1]
+        main(out_dir=args[1])
+    else:
+        main()

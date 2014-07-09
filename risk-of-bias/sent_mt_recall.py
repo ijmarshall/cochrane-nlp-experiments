@@ -17,11 +17,12 @@ from sklearn.cross_validation import KFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import SGDClassifier
 
+import sys
 import os
 import time
 
 
-def main():
+def main(out_dir="results"):
 
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
@@ -106,12 +107,18 @@ def main():
 
 
 
-    model_metrics.save_csv(os.path.join('results', outputnames.filename(label="model")))
-    stupid_metrics.save_csv(os.path.join('results', outputnames.filename(label="stupid-baseline")))
+
+    model_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="model")))
+    stupid_metrics.save_csv(os.path.join(out_dir, outputnames.filename(label="stupid-baseline")))
     
 
 
 
 
 if __name__ == '__main__':
-    main()
+    args = sys.argv
+    if len(args) > 1:
+        print "output directory: %s" % args[1]
+        main(out_dir=args[1])
+    else:
+        main()
