@@ -8,16 +8,25 @@ from collections import defaultdict
 import random
 
 DOMAINS = riskofbias.CORE_DOMAINS[:6]
-NO_QUESTIONS = 3 # number of sentences per domain to ask about
-ALLOCATIONS_FILE = "allocations.json"
-EVALUATOR = "Iain"
+NO_QUESTIONS = 4 # number of studies to ask about
 INPUT = "test_data.csv"
 
 DOMAIN_DESCRIPTIONS = {}
 
+
+INTRODUCTION = """
+<b>Thank you for helping with our RobotReviewer validation study!</b>
+
+We are going to present you with a series of sentences from a number of studies.
+
+Please note, <b>it doesn't matter whether the text indicates a low, high, or unknown risk of bias</b>.
+We are only interested in whether the sentence contains information which is relevant to making a decision.
+
+This is not a test of your expertise. We expect the relevance (or not) of each sentence to be quickly obvious most of the time.
+"""
+
 DOMAIN_DESCRIPTIONS[DOMAINS[0]] = """
-Random sequence generation (selection bias): Biased allocation to interventions due to inadequate generation of a randomised 
-sequence
+Random sequence generation (selection bias): Biased allocation to interventions due to inadequate generation of a randomised sequence
 
 There is a low risk of bias if the investigators describe a random component in the sequence 
 generation process such as: referring to a random number table, using a computer random number 
@@ -33,8 +42,7 @@ the participant, results of a laboratory test or a series of tests, or availabil
 
 
 DOMAIN_DESCRIPTIONS[DOMAINS[1]] = """
-Allocation concealment (selection bias): Biased allocation to interventions due to inadequate concealment of allocations prior to 
-assignment 
+Allocation concealment (selection bias): Biased allocation to interventions due to inadequate concealment of allocations prior to assignment 
 
 There is a low risk of selection bias if the participants and investigators enrolling participants could not 
 foresee assignment because one of the following, or an equivalent method, was used to conceal 
@@ -59,8 +67,7 @@ authors judge that the outcome is not likely to be influenced by lack of blindin
 """
 
 DOMAIN_DESCRIPTIONS[DOMAINS[3]] = """
-Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during 
-the study. 
+Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during the study. 
 
 There is a low risk of performance bias if blinding of personnel was ensured and it was unlikely that the 
 blinding could have been broken; or if there was no blinding or incomplete blinding, but the review 
@@ -68,8 +75,7 @@ authors judge that the outcome is not likely to be influenced by lack of blindin
 """
 
 DOMAIN_DESCRIPTIONS[DOMAINS[3]] = """
-Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during 
-the study. 
+Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during the study. 
 
 There is a low risk of performance bias if blinding of personnel was ensured and it was unlikely that the 
 blinding could have been broken; or if there was no blinding or incomplete blinding, but the review 
@@ -125,32 +131,40 @@ def main():
 
 	output = []
 
+	output.append("::NewPage:: Welcome")
+	output.append(INTRODUCTION)
 
 
 	for domain in DOMAINS:
 
-		output.append("::NewPage:: %s - instructions" % domain)
-		output.append(DOMAIN_DESCRIPTIONS[domain])
+		output.append("::NewPage:: %s - reminder" % domain)
 
-		print
+		output.append("Here's a reminder of what <b>%s</b> comprises; once you're happy, click the Next button below to start the evaluation." % domain)
+		output.append("Remember, we are asking you to judge whether pieces of text are relevant to a risk of bias domain; <em>not</em> whether they indicate high or low bias.")
+
+		output.append("<em>" + DOMAIN_DESCRIPTIONS[domain] + "</em>")
+
+	
 
 		test_ids = random.sample(question_data[domain].keys(), NO_QUESTIONS)
 
 		for i, uid in enumerate(test_ids):
 
+			output.append("::NewPage:: %s - study %d/%d" % (domain, int(i)+1, NO_QUESTIONS))
+			output.append("How relevant are each of the folloing sentences to the domain <b>%s</b>?" % domain)
+
 			for j, row in enumerate(question_data[domain][uid]):
 
-				output.append("::NewPage:: %s - study %d/%d, sentence %d " % (domain, int(i)+1, NO_QUESTIONS, int(j)+1))
 
-				output.append(row['sent_text'].strip())
+				
 
 				output.append("""
-				How relevant is the above sentence to the domain, <b>%s</b>?
-				() Highly relevant
-				() Some relevance
-				() Not relevant
-				""" % domain)
+<em>%s</em>
+() Highly relevant
+() Some relevance
+() Not relevant
 
+""" % row['sent_text'].strip())
 
 			# print "study number %s " % i
 			# print "\n".join(l['sent_text'].strip() for l in question_data[domain][i])
