@@ -62,7 +62,7 @@ def main():
         vec.builder_add_interaction_features(docs.X_i(uids[train]), low=2) # then add interactions
         X_train = vec.builder_fit_transform()
 
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
+        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
 
         # import pdb; pdb.set_trace()
 
