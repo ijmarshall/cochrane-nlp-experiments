@@ -30,7 +30,7 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
-    data = riskofbias.RoBData(test_mode=False)
+    data = riskofbias.RoBData(test_mode=True)
     data.generate_data(doc_level_only=False)
 
     # filter the data by Document
@@ -75,15 +75,15 @@ def main(out_dir="results"):
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
 
-        y_train = sent_docs.y(uids[train])
+        y_train = sent_docs.y(sent_uids[train], domain=domain)
   
         sent_vec.builder_clear()
-        sent_vec.builder_add_interaction_features(sent_docs.X(uids[train]), low=7) # add base features
-        sent_vec.builder_add_interaction_features(sent_docs.X_i(uids[train]), low=2) # then add interactions
+        sent_vec.builder_add_interaction_features(sent_docs.X(sent_uids[train]), low=7) # add base features
+        sent_vec.builder_add_interaction_features(sent_docs.X_i(sent_uids[train]), low=2) # then add interactions
         X_train = sent_vec.builder_fit_transform()
 
         clf.fit(X_train, y_train)
-        
+
         sent_models[domain] = clf.best_estimator_
         # import pdb; pdb.set_trace()
 
