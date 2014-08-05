@@ -73,13 +73,13 @@ def main(out_dir="results"):
     vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) # then add interactions
     X_train = vec.builder_fit_transform()
 
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
+    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
 
     # import pdb; pdb.set_trace()
 
-    clf.fit(X_train, y_train)
+    sent_clf.fit(X_train, y_train)
     del X_train, y_train
-    clf = clf.best_estimator_ # and we only need the best performing, 
+    sent_clf = clf.best_estimator_ # and we only need the best performing, 
 
 
 
@@ -90,7 +90,7 @@ def main(out_dir="results"):
     docs = riskofbias.MultiTaskDocFilter(data)
 
     tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
+    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)
 
@@ -103,7 +103,15 @@ def main(out_dir="results"):
     for doc_text, doc_domain in zip(X_train_d, i_train):
 
         doc_sents = sent_tokenizer.tokenize(doc_text)
-        doc_sents_X = sent_vec.transform(doc_sents)
+        doc_domains = [doc_domain] * len(doc_sents)
+
+        doc_X_i = zip(doc_sents, doc_domains)
+
+        sent_vec.builder_clear()
+        sent_vec.builder_add_interaction_features(doc_sents)) # add base features
+        sent_vec.builder_add_interaction_features(doc_X_i) # then add interactions
+        doc_sents_X = sent_vec.builder_transform()
+        doc_sents_preds = sent_clf.predict(doc_sents_X)
 
         doc_sents_preds = sent_models[doc_domain].predict(doc_sents_X)
 
