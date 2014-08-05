@@ -107,7 +107,7 @@ def main(out_dir="results"):
         doc_X_i = zip(doc_sents, doc_domains)
 
         sent_vec.builder_clear()
-        sent_vec.builder_add_interaction_features(doc_sents)) # add base features
+        sent_vec.builder_add_interaction_features(doc_sents) # add base features
         sent_vec.builder_add_interaction_features(doc_X_i) # then add interactions
         doc_sents_X = sent_vec.builder_transform()
         doc_sents_preds = sent_clf.predict(doc_sents_X)
