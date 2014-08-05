@@ -100,7 +100,7 @@ def main(out_dir="results"):
 
     for doc_text, doc_domain in zip(X_train_d, i_train):
 
-<<<<<<< HEAD:risk-of-bias/mt-mt.py
+
         doc_sents = sent_tokenizer.tokenize(doc_text)
         doc_domains = [doc_domain] * len(doc_sents)
 
@@ -111,21 +111,8 @@ def main(out_dir="results"):
         sent_vec.builder_add_interaction_features(doc_X_i) # then add interactions
         doc_sents_X = sent_vec.builder_transform()
         doc_sents_preds = sent_clf.predict(doc_sents_X)
-=======
-        #doc_sents = sent_tokenizer.tokenize(doc_text)
-        #doc_sents_X = sent_vec.transform(doc_sents)
-        #vec.builder_clear()
-
-        doc_sents = sent_docs.tokenize(doc_text)
-        pdb.set_trace()
-        #vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) # add base features
-        #vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) # then add interactions
-
-        #doc_sents_preds = sent_models[doc_domain].predict(doc_sents_X)
->>>>>>> 9a29d8f3871eff3c7258fa728818d35f2529b120:risk-of-bias/mt_mt.py
 
 
-        doc_sents_preds = clf.predict(doc_sents_X)
         high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
         print "high prob sents:"
