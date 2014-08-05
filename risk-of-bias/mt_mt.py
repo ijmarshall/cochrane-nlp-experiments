@@ -3,8 +3,8 @@
 # 1 fold, and versus humans and baseline
 # uses bigrams and unigrams
 
-from cochranenlp.experiments import riskofbias
-from cochranenlp.ml import modhashvec
+from cochranenlp.experiments import riskofbias2 as riskofbias
+from cochranenlp.ml import modhashvec2 as modhashvec
 from cochranenlp.output import metrics, outputnames
 
 from cochranenlp.textprocessing.tokenizer import sent_tokenizer
@@ -28,7 +28,7 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
-    data = riskofbias.RoBData(test_mode=False)
+    data = riskofbias.RoBData(test_mode=True)
     data.generate_data(doc_level_only=False)
 
     # filter the data by Document
@@ -82,8 +82,6 @@ def main(out_dir="results"):
     clf = clf.best_estimator_ # and we only need the best performing, 
 
 
-
-
     # we need different test ids for each domain
     # (since we're testing on studies with more than one RoB assessment for *each domain*)
 
@@ -102,11 +100,19 @@ def main(out_dir="results"):
 
     for doc_text, doc_domain in zip(X_train_d, i_train):
 
-        doc_sents = sent_tokenizer.tokenize(doc_text)
-        doc_sents_X = sent_vec.transform(doc_sents)
+        #doc_sents = sent_tokenizer.tokenize(doc_text)
+        #doc_sents_X = sent_vec.transform(doc_sents)
+        #vec.builder_clear()
 
-        doc_sents_preds = sent_models[doc_domain].predict(doc_sents_X)
+        doc_sents = sent_docs.tokenize(doc_text)
+        pdb.set_trace()
+        #vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) # add base features
+        #vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) # then add interactions
 
+        #doc_sents_preds = sent_models[doc_domain].predict(doc_sents_X)
+
+
+        doc_sents_preds = clf.predict(doc_sents_X)
         high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
         print "high prob sents:"
