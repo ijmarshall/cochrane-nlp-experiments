@@ -6,7 +6,7 @@
 # uses bigrams and unigrams
 
 from cochranenlp.experiments import riskofbias2 as riskofbias # for multi-task sentence model.
-from cochranenlp.ml import modhashvec
+from cochranenlp.ml import modhashvec2 as modhashvec
 from cochranenlp.output import metrics, outputnames
 
 from cochranenlp.textprocessing.tokenizer import sent_tokenizer
@@ -61,8 +61,8 @@ def main(out_dir="results"):
 
     sent_models = {} #where the key is the domain name
 
-    sent_vec = modhashvec.InteractionHashingVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**24) # hashing vectorizer so doesn't change per domain in terms of feature space
-
+    #sent_vec = modhashvec.InteractionHashingVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**24) # hashing vectorizer so doesn't change per domain in terms of feature space
+    sent_vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26)
     for domain in riskofbias.CORE_DOMAINS:
 
         sent_uids = np.intersect1d(uids_train, np.array(sent_docs.get_ids(filter_domain=domain)))
@@ -70,16 +70,14 @@ def main(out_dir="results"):
 
         print "%d docs obtained for domain: %s" % (no_studies, domain)
 
-
         tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
-
-        y_train = sent_docs.y(sent_uids[train], domain=domain)
-  
+        y_train = sent_docs.y(sent_uids, domain=domain)
         sent_vec.builder_clear()
-        sent_vec.builder_add_interaction_features(sent_docs.X(sent_uids[train]), low=7) # add base features
-        sent_vec.builder_add_interaction_features(sent_docs.X_i(sent_uids[train]), low=2) # then add interactions
+        sent_vec.builder_add_interaction_features(sent_docs.X(sent_uids, domain=domain), low=7) # add base features
+        sent_vec.builder_add_interaction_features(sent_docs.X_i(sent_uids, domain=domain), low=2) # then add interactions
+        
         X_train = sent_vec.builder_fit_transform()
 
         clf.fit(X_train, y_train)
