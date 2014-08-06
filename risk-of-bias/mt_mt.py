@@ -21,7 +21,6 @@ import time
 import pdb
 
 def main(out_dir="results"):
-
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
     human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
@@ -39,91 +38,93 @@ def main(out_dir="results"):
 
     uids_all = filtered_data.get_ids(pmid_instance=0) # those with 1 or more assessment (i.e. all)
     uids_double_assessed = filtered_data.get_ids(pmid_instance=1) # those with 2 (or more) assessments (to hide for training)
-
     uids_train = np.setdiff1d(uids_all, uids_double_assessed)
 
 
-    ###
-    ###    sentence prediction
-    ###
+
+    ########################
+    # sentence prediction  #
+    ########################
+
 
     # The first stage is to make the sentence prediction model using the
     #   training data set
     #
-
-
     print "First, making sentence prediction model"
     sent_docs = riskofbias.MultiTaskSentFilter(data)
-
     uids = np.array(sent_docs.get_ids())
     no_studies = len(uids)
 
-    kf = KFold(no_studies, n_folds=5, shuffle=False)
+    # sentence tokenization
+    sent_vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
+    sent_vec.builder_clear()
+    # add base features
+    sent_vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) 
+    # now we add interaction features.
+    # the X_i method returns token tuples crossing every term with every domain,
+    # and the vectorizer (an instance of ModularVectorizer) deals with inserting 
+    # the actual interaction tokens that cross domains with tokens.
+    sent_vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) 
 
+    # setup sentence classifier
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(0, 2, 5)]}
+    # bcw: are we sure we want to do 'recall' here, and not (e.g.) F1?
+    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=1)
 
-    vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
-
-    
+    X_train = sent_vec.builder_fit_transform()
     y_train = sent_docs.y(uids_train)
-
-        
-    vec.builder_clear()
-    vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) # add base features
-    vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) # then add interactions
-    X_train = vec.builder_fit_transform()
-
-    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
-
-    # import pdb; pdb.set_trace()
 
     sent_clf.fit(X_train, y_train)
     del X_train, y_train
-    sent_clf = clf.best_estimator_ # and we only need the best performing, 
+    # we only need the best performing
+    sent_clf = sent_clf.best_estimator_ 
 
+    # now we have our multi-task sentence prediction model,
+    # which we'll use to make sentence-level predictions for
+    # documents.
+
+
+    ########################
+    # document prediction  #
+    ########################
 
     # we need different test ids for each domain
     # (since we're testing on studies with more than one RoB assessment for *each domain*)
-
     docs = riskofbias.MultiTaskDocFilter(data)
-
-    tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1', n_jobs=16)
-
-    X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)
+    X_train_d = docs.Xyi(uids_train)
+    # bcw: note that I've amended the y method to 
+    # return interactions as well (i.e., domain strs)
+    y_train = docs.y(uids_train)
 
     # add interaction features (here both domain + high prob sentences)
-
     interactions = {domain:[] for domain in riskofbias.CORE_DOMAINS}
-
     high_prob_sents = []
 
-    for doc_text, doc_domain in zip(X_train_d, i_train):
-
-
+    for doc_text, doc_domain in X_train_d:
+        
+        # so the problem here is that doc_text comprises tuples
+        # 
         doc_sents = sent_tokenizer.tokenize(doc_text)
         doc_domains = [doc_domain] * len(doc_sents)
-
+        # interactions
         doc_X_i = zip(doc_sents, doc_domains)
 
+        # sent_vec is from above.
         sent_vec.builder_clear()
         sent_vec.builder_add_interaction_features(doc_sents) # add base features
         sent_vec.builder_add_interaction_features(doc_X_i) # then add interactions
         doc_sents_X = sent_vec.builder_transform()
+        # sent_clf was trained above
         doc_sents_preds = sent_clf.predict(doc_sents_X)
 
-
-        high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
+        high_prob_sents.append(" ".join([sent for sent, sent_pred in 
+                        zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
         print "high prob sents:"
-
         from collections import Counter
         prob_count = Counter(list(doc_sents_preds))
         print prob_count
         
-
-
-
         for domain in riskofbias.CORE_DOMAINS:
             if domain == doc_domain:
                 interactions[domain].append(True)
@@ -132,47 +133,49 @@ def main(out_dir="results"):
 
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
-
-    
     vec.builder_add_docs(X_train_d, low=10) # add base features
 
-    # print high_prob_sents
-
     for domain in riskofbias.CORE_DOMAINS:
-        
         print np.sum(interactions[domain]), "/", len(interactions[domain]), "added for", domain
         vec.builder_add_docs(X_train_d, interactions=interactions[domain], prefix=domain+"-i-", low=2) # then add interactions
 
+    '''
+    bcw -- @TODO 
+    at the moment, when we insert the sentence prediction interaction 
+    terms, these are inserted without reference to the specific domains 
+    they were predicted for. in other words, if a sentence s1 is predicted 
+    to support the assessment for blinding, it is inserted with the basic 
+    's-' prefix, and is not differentiated in anyway from a sentence 
+    predicted to be supporting (e.g.) randomization. we should add the 
+    domains into the prefix (so 's-randomization-xxx' or whatever)
+    '''
 
+    # here we insert the interaction terms for sentence
+    # predictions (i.e., the tokens comprising sentences predicted
+    # to be relevant)
     vec.builder_add_docs(high_prob_sents, prefix="-s-", low=2)
-    
-
-    X_train = vec.builder_fit_transform()
-    
+    X_train = vec.builder_fit_transform()    
     clf.fit(X_train, y_train)
 
+    ############
+    # testing  #
+    ############
+
     # Test on each domain in turn
-
     for domain in riskofbias.CORE_DOMAINS:
-
         uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
         uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
         uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
 
-
         X_test_d, y_test = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=0)
-
         X_ignore, y_human = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=1)
         X_ignore = None # don't need this bit
 
         #
         #   get high prob sents from test data
         #
-
         high_prob_sents =[]
         for doc_text in X_test_d:
-
-    
             doc_sents = sent_tokenizer.tokenize(doc_text)
             doc_domains = [doc_domain] * len(doc_sents)
 
@@ -184,21 +187,18 @@ def main(out_dir="results"):
             doc_sents_X = sent_vec.builder_transform()
             doc_sents_preds = sent_clf.predict(doc_sents_X)
 
-
-            high_prob_sents.append(" ".join([sent for sent, sent_pred in zip(doc_sents, doc_sents_preds) if sent_pred==1]))
-
-
+            high_prob_sents.append(" ".join(
+                                    [sent for sent, sent_pred in 
+                                        zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
 
         # build up test vector
-
         vec.builder_clear()
         vec.builder_add_docs(X_test_d) # add base features
         vec.builder_add_docs(X_test_d, prefix=domain+'-i-') # add interactions
-        vec.builder_add_docs(high_prob_sents, prefix="-s-")
+        vec.builder_add_docs(high_prob_sents, prefix="-s-") # sentence interactions
     
         X_test = vec.builder_transform()
-
         y_preds = clf.predict(X_test)
 
         model_metrics.add_preds_test(y_preds, y_test, domain=domain)
