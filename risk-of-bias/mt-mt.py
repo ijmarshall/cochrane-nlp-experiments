@@ -79,7 +79,7 @@ def main(out_dir="results"):
 
     sent_clf.fit(X_train, y_train)
     del X_train, y_train
-    sent_clf = clf.best_estimator_ # and we only need the best performing, 
+    sent_clf = sent_clf.best_estimator_ # and we only need the best performing, 
 
 
 
