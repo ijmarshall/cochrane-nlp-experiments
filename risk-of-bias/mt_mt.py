@@ -19,6 +19,7 @@ import sys
 import os
 import time
 import pdb
+from itertools import izip
 
 def main(out_dir="results"):
     model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
@@ -92,6 +93,7 @@ def main(out_dir="results"):
     # (since we're testing on studies with more than one RoB assessment for *each domain*)
     docs = riskofbias.MultiTaskDocFilter(data)
     X_train_d = docs.Xyi(uids_train)
+
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)
     y_train = docs.y(uids_train)
@@ -99,6 +101,7 @@ def main(out_dir="results"):
     # add interaction features (here both domain + high prob sentences)
     interactions = {domain:[] for domain in riskofbias.CORE_DOMAINS}
     high_prob_sents = []
+    interaction_domains = []
 
     for doc_text, doc_domain in X_train_d:
         
@@ -119,41 +122,25 @@ def main(out_dir="results"):
 
         high_prob_sents.append(" ".join([sent for sent, sent_pred in 
                         zip(doc_sents, doc_sents_preds) if sent_pred==1]))
+        interaction_domains.append("-s-" + doc_domain)
 
         print "high prob sents:"
         from collections import Counter
         prob_count = Counter(list(doc_sents_preds))
         print prob_count
         
-        for domain in riskofbias.CORE_DOMAINS:
-            if domain == doc_domain:
-                interactions[domain].append(True)
-            else:
-                interactions[domain].append(False)
+        # for domain in riskofbias.CORE_DOMAINS:
+        #     if domain == doc_domain:
+        #         interactions[domain].append(True)
+        #     else:
+        #         interactions[domain].append(False)
 
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
-    vec.builder_add_docs(X_train_d, low=10) # add base features
+    vec.builder_add_docs(docs.X(uids_train), low=10) # add base features
+    vec.builder_add_docs(X_train_d, low=2) # add domain interactions
+    vec.builder_add_docs(izip(high_prob_sents, interaction_domains), low=2)    # then add sentence interaction terms
 
-    for domain in riskofbias.CORE_DOMAINS:
-        print np.sum(interactions[domain]), "/", len(interactions[domain]), "added for", domain
-        vec.builder_add_docs(X_train_d, interactions=interactions[domain], prefix=domain+"-i-", low=2) # then add interactions
-
-    '''
-    bcw -- @TODO 
-    at the moment, when we insert the sentence prediction interaction 
-    terms, these are inserted without reference to the specific domains 
-    they were predicted for. in other words, if a sentence s1 is predicted 
-    to support the assessment for blinding, it is inserted with the basic 
-    's-' prefix, and is not differentiated in anyway from a sentence 
-    predicted to be supporting (e.g.) randomization. we should add the 
-    domains into the prefix (so 's-randomization-xxx' or whatever)
-    '''
-
-    # here we insert the interaction terms for sentence
-    # predictions (i.e., the tokens comprising sentences predicted
-    # to be relevant)
-    vec.builder_add_docs(high_prob_sents, prefix="-s-", low=2)
     X_train = vec.builder_fit_transform()    
     clf.fit(X_train, y_train)
 
@@ -174,12 +161,13 @@ def main(out_dir="results"):
         #
         #   get high prob sents from test data
         #
-        high_prob_sents =[]
+        high_prob_sents = []
+        
         for doc_text in X_test_d:
             doc_sents = sent_tokenizer.tokenize(doc_text)
             doc_domains = [doc_domain] * len(doc_sents)
 
-            doc_X_i = zip(doc_sents, doc_domains)
+            doc_X_i = izip(doc_sents, doc_domains)
 
             sent_vec.builder_clear()
             sent_vec.builder_add_interaction_features(doc_sents) # add base features
@@ -191,12 +179,15 @@ def main(out_dir="results"):
                                     [sent for sent, sent_pred in 
                                         zip(doc_sents, doc_sents_preds) if sent_pred==1]))
 
+        
+        sent_domain_interactions = ["-s-" + domain] * len(high_prob_sents)
+        domain_interactions = [domain] * len(high_prob_sents)
 
         # build up test vector
         vec.builder_clear()
         vec.builder_add_docs(X_test_d) # add base features
-        vec.builder_add_docs(X_test_d, prefix=domain+'-i-') # add interactions
-        vec.builder_add_docs(high_prob_sents, prefix="-s-") # sentence interactions
+        vec.builder_add_docs(izip(X_test_d, domain_interactions)) # add interactions
+        vec.builder_add_docs(izip(high_prob_sents, sent_domain_interactions)) # sentence interactions
     
         X_test = vec.builder_transform()
         y_preds = clf.predict(X_test)
