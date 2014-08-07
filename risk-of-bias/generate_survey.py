@@ -164,7 +164,7 @@ def main():
 		for i, uid in enumerate(test_ids):
 
 			output.append("::NewPage:: %s - study %d/%d" % (domain, int(i)+1, NO_QUESTIONS))
-			output.append("How relevant are each of the folloing sentences to the domain <b>%s</b>?" % domain)
+			output.append("How relevant are each of the following sentences to the domain <b>%s</b>?" % domain)
 
 			for j, row in enumerate(question_data[domain][uid]):
 
