@@ -107,7 +107,7 @@ def main(out_dir="results"):
     high_prob_sents = []
     interaction_domains = []
 
-    for doc_text, doc_domain in X_train_d:
+    for doc_index, (doc_text, doc_domain) in enumerate(X_train_d):
         
         # so the problem here is that doc_text comprises tuples
         # 
@@ -128,10 +128,11 @@ def main(out_dir="results"):
                         zip(doc_sents, doc_sents_preds) if sent_pred==1]))
         interaction_domains.append("-s-" + doc_domain)
 
-        print "high prob sents:"
-        from collections import Counter
-        prob_count = Counter(list(doc_sents_preds))
-        print prob_count
+        if doc_index % 10 == 0:
+            print doc_index
+        # from collections import Counter
+        # prob_count = Counter(list(doc_sents_preds))
+        # print prob_count
         
         # for domain in riskofbias.CORE_DOMAINS:
         #     if domain == doc_domain:
