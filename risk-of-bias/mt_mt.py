@@ -114,7 +114,7 @@ def main(out_dir="results"):
         doc_sents = sent_tokenizer.tokenize(doc_text)
         doc_domains = [doc_domain] * len(doc_sents)
         # interactions
-        doc_X_i = zip(doc_sents, doc_domains)
+        doc_X_i = izip(doc_sents, doc_domains)
 
         # sent_vec is from above.
         sent_vec.builder_clear()
@@ -142,7 +142,8 @@ def main(out_dir="results"):
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
     vec.builder_add_docs(docs.X(uids_train), low=10) # add base features
-    vec.builder_add_docs(X_train_d, low=2) # add domain interactions
+    vec.builder_add_docs(docs.Xyi(uids_train), low=2) # add domain interactions
+    # removed X_train_d since already been through the generator! (needed reset)
     vec.builder_add_docs(izip(high_prob_sents, interaction_domains), low=2)    # then add sentence interaction terms
 
     X_train = vec.builder_fit_transform()    
