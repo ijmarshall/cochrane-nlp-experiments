@@ -64,9 +64,7 @@ Blinding of participants: Bias due to knowledge of the allocated interventions b
 There is a low risk of performance bias if blinding of participants was ensured and it was unlikely that the 
 blinding could have been broken; or if there was no blinding or incomplete blinding, but the review 
 authors judge that the outcome is not likely to be influenced by lack of blinding.
-"""
 
-DOMAIN_DESCRIPTIONS[DOMAINS[3]] = """
 Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during the study. 
 
 There is a low risk of performance bias if blinding of personnel was ensured and it was unlikely that the 
@@ -74,15 +72,8 @@ blinding could have been broken; or if there was no blinding or incomplete blind
 authors judge that the outcome is not likely to be influenced by lack of blinding
 """
 
+
 DOMAIN_DESCRIPTIONS[DOMAINS[3]] = """
-Blinding of personnel/care providers: Bias due to knowledge of the allocated interventions by personnel/care providers during the study. 
-
-There is a low risk of performance bias if blinding of personnel was ensured and it was unlikely that the 
-blinding could have been broken; or if there was no blinding or incomplete blinding, but the review 
-authors judge that the outcome is not likely to be influenced by lack of blinding
-"""
-
-DOMAIN_DESCRIPTIONS[DOMAINS[4]] = """
 Blinding of outcome assessor: Bias due to knowledge of the allocated interventions by outcome assessor
 
 There is low risk of detection bias if the blinding of the outcome assessment was ensured and it was 
@@ -98,7 +89,7 @@ assessors if there is a low risk of bias for care providers.*
 treatment or adverse effects of the treatment could not be noticed in the extracted data.
 """
 
-DOMAIN_DESCRIPTIONS[DOMAINS[5]] = """
+DOMAIN_DESCRIPTIONS[DOMAINS[4]] = """
 Incomplete outcome data (attrition bias): Attrition bias due to amount, nature or handling of incomplete outcome data
 
 There is a low risk of attrition bias if there were no missing outcome data; reasons for missing outcome 
@@ -113,6 +104,28 @@ standardized difference in means) among missing outcomes was not enough to have 
 impact on observed effect size, or missing data were imputed using appropriate methods
 
 """
+
+DOMAIN_DESCRIPTIONS[DOMAINS[5]] = """
+Selective Reporting: reporting bias due to selective outcome reporting
+
+Criteria for a judgement of ‘Low risk’ of bias.
+Any of the following:
+The study protocol is available and all of the study’s pre-specified (primary and secondary) outcomes that are of interest in the review have been reported in the pre-specified way;
+The study protocol is not available but it is clear that the published reports include all expected outcomes, including those that were pre-specified (convincing text of this nature may be uncommon).
+
+Criteria for the judgement of ‘High risk’ of bias.
+Any one of the following:
+Not all of the study’s pre-specified primary outcomes have been reported;
+One or more primary outcomes is reported using measurements, analysis methods or subsets of the data (e.g. subscales) that were not pre-specified;
+One or more reported primary outcomes were not pre-specified (unless clear justification for their reporting is provided, such as an unexpected adverse effect);
+One or more outcomes of interest in the review are reported incompletely so that they cannot be entered in a meta-analysis;
+The study report fails to include results for a key outcome that would be expected to have been reported for such a study.
+
+
+"""
+
+
+
 def main():
 
 	question_data = {domain: defaultdict(list) for domain in DOMAINS}
@@ -151,7 +164,7 @@ def main():
 		for i, uid in enumerate(test_ids):
 
 			output.append("::NewPage:: %s - study %d/%d" % (domain, int(i)+1, NO_QUESTIONS))
-			output.append("How relevant are each of the folloing sentences to the domain <b>%s</b>?" % domain)
+			output.append("How relevant are each of the following sentences to the domain <b>%s</b>?" % domain)
 
 			for j, row in enumerate(question_data[domain][uid]):
 

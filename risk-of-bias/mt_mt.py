@@ -28,7 +28,7 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
-    data = riskofbias.RoBData(test_mode=True)
+    data = riskofbias.RoBData(test_mode=False)
     data.generate_data(doc_level_only=False)
 
     # filter the data by Document
@@ -74,7 +74,7 @@ def main(out_dir="results"):
     # setup sentence classifier
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(0, 2, 5)]}
     # bcw: are we sure we want to do 'recall' here, and not (e.g.) F1?
-    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
+    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
     X_train = sent_vec.builder_fit_transform()
     y_train = sent_docs.y(uids_train)
@@ -100,7 +100,7 @@ def main(out_dir="results"):
 
 
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=16)
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)
@@ -148,7 +148,7 @@ def main(out_dir="results"):
 
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
-    vec.builder_add_docs(docs.X(uids_train), low=10) # add base features
+    vec.builder_add_docs(docs.X(uids_train), low=7) # add base features
     vec.builder_add_docs(docs.Xyi(uids_train), low=2) # add domain interactions
     # removed X_train_d since already been through the generator! (needed reset)
     vec.builder_add_docs(izip(high_prob_sents, interaction_domains), low=2)    # then add sentence interaction terms
@@ -198,6 +198,11 @@ def main(out_dir="results"):
         
         sent_domain_interactions = ["-s-" + domain] * len(high_prob_sents)
         domain_interactions = [domain] * len(high_prob_sents)
+
+        print
+        print "domain: %s" % domain
+        print "High prob sents:"
+        print '\n'.join(high_prob_sents)
 
         # build up test vector
         vec.builder_clear()
