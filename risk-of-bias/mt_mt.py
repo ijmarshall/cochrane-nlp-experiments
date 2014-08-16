@@ -59,13 +59,17 @@ def main(out_dir="results"):
     # sentence tokenization
     sent_vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     sent_vec.builder_clear()
-    # add base features
+    # add base features; this effectively generates the shared feature
+    # space (i.e., features for all domains)
     sent_vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) 
-    # now we add interaction features.
-    # the X_i method returns token tuples crossing every term with every domain,
-    # and the vectorizer (an instance of ModularVectorizer) deals with inserting 
-    # the actual interaction tokens that cross domains with tokens.
-    sent_vec.builder_add_interaction_features(sent_docs.X_i(uids_train), low=2) 
+
+    # now we add interaction features, which cross the domain with the
+    # tokens. specifically, the X_i method returns token tuples crossing 
+    # every term with every domain, and the vectorizer (an instance of 
+    # ModularVectorizer) deals with inserting the actual interaction tokens 
+    # that cross domains with tokens.
+    domain_interaction_tuples = sent_docs.X_i(uids_train)
+    sent_vec.builder_add_interaction_features(domain_interaction_tuples, low=2) 
 
     # setup sentence classifier
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(0, 2, 5)]}
@@ -109,8 +113,6 @@ def main(out_dir="results"):
 
     for doc_index, (doc_text, doc_domain) in enumerate(X_train_d):
         
-        # so the problem here is that doc_text comprises tuples
-        # 
         doc_sents = sent_tokenizer.tokenize(doc_text)
         doc_domains = [doc_domain] * len(doc_sents)
         # interactions
@@ -121,6 +123,10 @@ def main(out_dir="results"):
         sent_vec.builder_add_interaction_features(doc_sents) # add base features
         sent_vec.builder_add_interaction_features(doc_X_i) # then add interactions
         doc_sents_X = sent_vec.builder_transform()
+
+        ## bcw -- shouldn't we use the *true* sentence labels
+        # here, rather than predictions????
+
         # sent_clf was trained above
         doc_sents_preds = sent_clf.predict(doc_sents_X)
 
@@ -171,7 +177,11 @@ def main(out_dir="results"):
         
         for doc_text in X_test_d:
             doc_sents = sent_tokenizer.tokenize(doc_text)
-            doc_domains = [doc_domain] * len(doc_sents)
+
+            # bcw -- I think this (using doc_domain and not 
+            # domain) was the bug before!
+            #doc_domains = [doc_domain] * len(doc_sents)
+            doc_domains = [domain] * len(doc_sents)
 
             doc_X_i = izip(doc_sents, doc_domains)
 
