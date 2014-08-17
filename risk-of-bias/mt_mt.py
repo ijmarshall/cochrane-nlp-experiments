@@ -74,7 +74,7 @@ def main(out_dir="results"):
     # setup sentence classifier
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(0, 2, 5)]}
     # bcw: are we sure we want to do 'recall' here, and not (e.g.) F1?
-    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
+    sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=4)
 
     X_train = sent_vec.builder_fit_transform()
     y_train = sent_docs.y(uids_train)
@@ -100,7 +100,7 @@ def main(out_dir="results"):
 
 
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=4)
 
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)
