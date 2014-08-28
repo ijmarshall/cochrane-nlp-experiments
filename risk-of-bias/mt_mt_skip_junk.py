@@ -101,8 +101,8 @@ def main(out_dir="results"):
     X_train_d = docs.Xyi(uids_train)
 
 
-    tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=4)
+    tuned_parameters = {"alpha": np.logspace(-4, -1, 5)}
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)
