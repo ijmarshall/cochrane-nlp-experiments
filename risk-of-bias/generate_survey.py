@@ -3,12 +3,13 @@ import unicodecsv as csv
 from cochranenlp.experiments import riskofbias
 import json
 import uuid
-import datetime
+import time
 from collections import defaultdict
 import random
+import sys
 
 DOMAINS = riskofbias.CORE_DOMAINS[:6]
-NO_QUESTIONS = 2 # number of studies to ask about
+
 INPUT = "test_data.csv"
 
 DOMAIN_DESCRIPTIONS = {}
@@ -23,6 +24,15 @@ Please note, <b>it doesn't matter whether the text indicates a low, high, or unk
 We are only interested in whether the sentence contains information which is relevant to making a decision.
 
 This is not a test of your expertise. We expect the relevance (or not) of each sentence to be quickly obvious most of the time.
+
+We will ask you to rate a series of sentences using the following categories:
+
+<b>Highly relevant</b>: Provides enough information to make a judgement. This text could be quoted in a review to support a judgement.
+
+<b>Some relevance</b>: Relevant to the risk of bias domain, not enough alone to form a judgement.
+
+<b>Not relevant</b>: Of no relevance to this domain of bias. Gives no information useful in making a judgement.
+
 """
 
 DOMAIN_DESCRIPTIONS[DOMAINS[0]] = """
@@ -123,7 +133,9 @@ The study report fails to include results for a key outcome that would be expect
 
 
 
-def main():
+def main(reviewer, no_questions):
+
+	log = {domain: defaultdict(list) for domain in DOMAINS}
 
 	question_data = {domain: defaultdict(list) for domain in DOMAINS}
 
@@ -142,7 +154,7 @@ def main():
 
 	output = []
 
-	output.append("::NewPage:: Welcome")
+	output.append("::NewPage:: Welcome %s" % reviewer)
 	output.append(INTRODUCTION)
 
 
@@ -150,18 +162,21 @@ def main():
 
 		output.append("::NewPage:: %s - reminder" % domain)
 
-		output.append("Here's a reminder of what <b>%s</b> comprises; once you're happy, click the Next button below to start the evaluation." % domain)
+		output.append("Here's a reminder of what <b>%s</b> comprises (taken from <em>the Cochrane Handbook</em>); once you're happy, click the Next button below to start the evaluation." % domain)
 		output.append("Remember, we are asking you to judge whether pieces of text are relevant to a risk of bias domain; <em>not</em> whether they indicate high or low bias.")
 
 		output.append("<em>" + DOMAIN_DESCRIPTIONS[domain] + "</em>")
 
 	
+		# print random.sample(question_data[domain].keys(), 4)
+		test_ids = random.sample(question_data[domain].keys(), no_questions)
 
-		test_ids = random.sample(question_data[domain].keys(), NO_QUESTIONS)
+
+		
 
 		for i, uid in enumerate(test_ids):
 
-			output.append("::NewPage:: %s - study %d/%d" % (domain, int(i)+1, NO_QUESTIONS))
+			output.append("::NewPage:: %s - study %d/%d" % (domain, int(i)+1, no_questions))
 			output.append("How relevant are each of the following sentences to the domain <b>%s</b>?" % domain)
 
 			for j, row in enumerate(question_data[domain][uid]):
@@ -183,10 +198,11 @@ def main():
 
 
 
-	with open("output.txt", "wb") as f:
+	outfile = time.strftime("%Y-%m-%d %H-%M") + " " + reviewer
+	with open("surveys/%s.txt" % outfile, "wb") as f:
 		f.write("\n\n".join(output))
 
 
 
 if __name__ == '__main__':
-	main()
+	main(reviewer=sys.argv[1], no_questions=int(sys.argv[2]))
