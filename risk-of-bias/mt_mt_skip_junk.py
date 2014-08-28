@@ -30,8 +30,8 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
-    data = riskofbias.RoBData(test_mode=False, skip_small_files=True)
-    data.generate_data(doc_level_only=False)
+    data = riskofbias.RoBData(test_mode=False)
+    data.generate_data(doc_level_only=False, skip_small_files=True)
 
     # filter the data by Document
     filtered_data = riskofbias.DocFilter(data)
