@@ -113,7 +113,7 @@ def main(out_dir="results"):
     y_train = docs.y(uids_train, domain=skip_domains)
 
     # add interaction features (here both domain + high prob sentences)
-    interactions = {domain:[] for domain in riskofbias.CORE_DOMAINS}
+    interactions = {domain:[] for domain in skip_domains}
     high_prob_sents = []
     interaction_domains = []
 
@@ -167,7 +167,7 @@ def main(out_dir="results"):
     ############
 
     # Test on each domain in turn
-    for domain in riskofbias.CORE_DOMAINS:
+    for domain in skip_domains:
         uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
         uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
         uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
