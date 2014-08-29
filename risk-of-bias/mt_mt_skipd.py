@@ -169,7 +169,7 @@ def main(out_dir="results"):
     # Test on each domain in turn
     for domain in skip_domains:
         uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
-        uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1)
+        uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
         uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
 
         X_test_d, y_test = filtered_data.Xy(uids_test_domain, domain=domain, pmid_instance=0)
