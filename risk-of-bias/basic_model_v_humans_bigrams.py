@@ -28,7 +28,7 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     data = riskofbias.RoBData(test_mode=False)
-    data.generate_data(doc_level_only=True)
+    data.generate_data(doc_level_only=True, skip_small_files=True)
 
     # filter the data by Document
     filtered_data = riskofbias.DocFilter(data)
@@ -50,7 +50,7 @@ def main(out_dir="results"):
         # print "%d docs obtained for domain: %s" % (len(uids), domain)
 
         tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
-        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='accuracy')
+        clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
         # no_studies = len(uids)
 

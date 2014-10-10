@@ -29,7 +29,7 @@ def main(out_dir="results"):
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
     data = riskofbias.RoBData(test_mode=False)
-    data.generate_data(doc_level_only=False)
+    data.generate_data(doc_level_only=False, skip_small_files=True)
 
     # filter the data by Document
     filtered_data = riskofbias.DocFilter(data)
@@ -100,7 +100,7 @@ def main(out_dir="results"):
 
 
     tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
-    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall', n_jobs=4)
+    clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1', n_jobs=4)
 
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)

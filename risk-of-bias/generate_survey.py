@@ -29,7 +29,7 @@ We will ask you to rate a series of sentences using the following categories:
 
 <b>Highly relevant</b>: Provides enough information to make a judgement. This text could be quoted in a review to support a judgement.
 
-<b>Some relevance</b>: Relevant to the risk of bias domain, not enough alone to form a judgement.
+<b>Some relevance</b>: Some relevance to the risk of bias domain, but not enough alone to form a judgement. This text might be quoted in a review in the absence of better text.
 
 <b>Not relevant</b>: Of no relevance to this domain of bias. Gives no information useful in making a judgement.
 
@@ -154,7 +154,7 @@ def main(reviewer, no_questions):
 
 	output = []
 
-	output.append("::NewPage:: Welcome %s" % reviewer)
+	output.append("::NewPage:: Welcome!")
 	output.append(INTRODUCTION)
 
 
