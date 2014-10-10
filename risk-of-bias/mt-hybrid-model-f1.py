@@ -72,7 +72,7 @@ def main(out_dir="results"):
         print "%d docs obtained for domain: %s" % (no_studies, domain)
 
 
-        tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 1, 5)]}
+        tuned_parameters = {"alpha": np.logspace(-4, -1, 5), "class_weight": [{1: i, -1: 1} for i in np.logspace(-1, 2, 10)]}
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
         X_train_d, y_train = sent_docs.Xy(sent_uids, domain=domain)
@@ -97,7 +97,7 @@ def main(out_dir="results"):
 
     docs = riskofbias.MultiTaskDocFilter(data)
 
-    tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
+    tuned_parameters = {"alpha": np.logspace(-2, 2, 10)}
     clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)

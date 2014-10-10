@@ -49,7 +49,7 @@ def main(out_dir="results"):
 
         # print "%d docs obtained for domain: %s" % (len(uids), domain)
 
-        tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
+        tuned_parameters = {"alpha": np.logspace(-2, 2, 10)}
         clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
         # no_studies = len(uids)
