@@ -30,8 +30,8 @@ def main(out_dir="results"):
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
-    data = riskofbias.RoBData(test_mode=True)
-    data.generate_data(doc_level_only=False)
+    data = riskofbias.RoBData(test_mode=False)
+    data.generate_data(doc_level_only=False, skip_small_files=True)
 
     # filter the data by Document
     filtered_data = riskofbias.DocFilter(data)
@@ -91,7 +91,7 @@ def main(out_dir="results"):
 
     docs = riskofbias.MultiTaskDocFilter(data)
 
-    tuned_parameters = {"alpha": np.logspace(-4, -1, 10)}
+    tuned_parameters = {"alpha": np.logspace(-2, 2, 10)}
     clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     X_train_d, y_train, i_train = docs.Xyi(uids_train, pmid_instance=0)
