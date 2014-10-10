@@ -21,10 +21,14 @@ import time
 import pdb
 from itertools import izip
 
+
+skip_domains=riskofbias.CORE_DOMAINS[:5] + riskofbias.CORE_DOMAINS[6:] # skip domain 5
+
+
 def main(out_dir="results"):
-    model_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
-    stupid_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
-    human_metrics = metrics.BinaryMetricsRecorder(domains=riskofbias.CORE_DOMAINS)
+    model_metrics = metrics.BinaryMetricsRecorder(domains=skip_domains)
+    stupid_metrics = metrics.BinaryMetricsRecorder(domains=skip_domains)
+    human_metrics = metrics.BinaryMetricsRecorder(domains=skip_domains)
 
     # parse the risk of bias data from Cochrane
     print "risk of bias data!"
@@ -61,14 +65,14 @@ def main(out_dir="results"):
     sent_vec.builder_clear()
     # add base features; this effectively generates the shared feature
     # space (i.e., features for all domains)
-    sent_vec.builder_add_interaction_features(sent_docs.X(uids_train), low=7) 
+    sent_vec.builder_add_interaction_features(sent_docs.X(uids_train, domain=skip_domains), low=7) 
 
     # now we add interaction features, which cross the domain with the
     # tokens. specifically, the X_i method returns token tuples crossing 
     # every term with every domain, and the vectorizer (an instance of 
     # ModularVectorizer) deals with inserting the actual interaction tokens 
     # that cross domains with tokens.
-    domain_interaction_tuples = sent_docs.X_i(uids_train)
+    domain_interaction_tuples = sent_docs.X_i(uids_train, domain=skip_domains)
     sent_vec.builder_add_interaction_features(domain_interaction_tuples, low=2) 
 
     # setup sentence classifier
@@ -77,7 +81,7 @@ def main(out_dir="results"):
     sent_clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='recall')
 
     X_train = sent_vec.builder_fit_transform()
-    y_train = sent_docs.y(uids_train)
+    y_train = sent_docs.y(uids_train, domain=skip_domains)
 
     sent_clf.fit(X_train, y_train)
     del X_train, y_train
@@ -96,18 +100,18 @@ def main(out_dir="results"):
     # we need different test ids for each domain
     # (since we're testing on studies with more than one RoB assessment for *each domain*)
     docs = riskofbias.MultiTaskDocFilter(data)
-    X_train_d = docs.Xyi(uids_train)
-
+    X_train_d = docs.Xyi(uids_train, domain=skip_domains)
 
     tuned_parameters = {"alpha": np.logspace(-2, 2, 10)}
     clf = GridSearchCV(SGDClassifier(loss="hinge", penalty="L2"), tuned_parameters, scoring='f1')
 
     # bcw: note that I've amended the y method to 
     # return interactions as well (i.e., domain strs)
-    y_train = docs.y(uids_train)
+    y_train = docs.y(uids_train, domain=skip_domains)
+
 
     # add interaction features (here both domain + high prob sentences)
-    interactions = {domain:[] for domain in riskofbias.CORE_DOMAINS}
+    interactions = {domain:[] for domain in skip_domains}
     high_prob_sents = []
     interaction_domains = []
 
@@ -148,8 +152,8 @@ def main(out_dir="results"):
 
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
     vec.builder_clear()
-    vec.builder_add_docs(docs.X(uids_train), low=7) # add base features
-    vec.builder_add_docs(docs.Xyi(uids_train), low=2) # add domain interactions
+    vec.builder_add_docs(docs.X(uids_train, domain=skip_domains), low=7) # add base features
+    vec.builder_add_docs(docs.Xyi(uids_train, domain=skip_domains), low=2) # add domain interactions
     # removed X_train_d since already been through the generator! (needed reset)
     vec.builder_add_docs(izip(high_prob_sents, interaction_domains), low=2)    # then add sentence interaction terms
 
@@ -161,7 +165,7 @@ def main(out_dir="results"):
     ############
 
     # Test on each domain in turn
-    for domain in riskofbias.CORE_DOMAINS:
+    for domain in skip_domains:
         uids_domain_all = filtered_data.get_ids(pmid_instance=0, filter_domain=domain)
         uids_domain_double_assessed = filtered_data.get_ids(pmid_instance=1, filter_domain=domain)
         uids_test_domain = np.intersect1d(uids_domain_all, uids_domain_double_assessed)
