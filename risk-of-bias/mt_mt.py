@@ -151,6 +151,8 @@ def main(out_dir="results"):
         #         interactions[domain].append(False)
 
     vec = modhashvec.ModularVectorizer(norm=None, non_negative=True, binary=True, ngram_range=(1, 2), n_features=2**26) # since multitask + bigrams = huge feature space
+
+
     vec.builder_clear()
     vec.builder_add_docs(docs.X(uids_train, domain=skip_domains), low=7) # add base features
     vec.builder_add_docs(docs.Xyi(uids_train, domain=skip_domains), low=2) # add domain interactions
