@@ -20,6 +20,7 @@ import os
 import time
 import pdb
 from itertools import izip
+import cPickle as pickle
 
 
 skip_domains=riskofbias.CORE_DOMAINS[:5] + riskofbias.CORE_DOMAINS[6:] # skip domain 5
