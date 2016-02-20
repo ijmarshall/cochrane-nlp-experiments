@@ -20,6 +20,7 @@ import os
 import time
 import pdb
 from itertools import izip
+import cPickle as pickle
 
 
 skip_domains=riskofbias.CORE_DOMAINS[:5] + riskofbias.CORE_DOMAINS[6:] # skip domain 5
@@ -162,6 +163,12 @@ def main(out_dir="results"):
     X_train = vec.builder_fit_transform()    
     clf.fit(X_train, y_train)
 
+
+
+    with open('mt_mt_production_models3.pck', 'wb') as f:
+        pickle.dump((sent_clf, clf.best_estimator_), f)
+
+    quit()
     ############
     # testing  #
     ############
